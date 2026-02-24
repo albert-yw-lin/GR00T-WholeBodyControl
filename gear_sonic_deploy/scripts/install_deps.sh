@@ -3,7 +3,10 @@
 set -e
 
 echo "🚀 Installing G1 Deploy system dependencies..."
-sudo apt-get update && sudo apt-get install -y libgtest-dev
+# Skip early apt-get when running inside a conda environment
+if [ -z "$CONDA_PREFIX" ]; then
+    sudo apt-get update && sudo apt-get install -y libgtest-dev
+fi
 
 # Detect system type and architecture
 ARCH=$(uname -m)
@@ -96,6 +99,83 @@ if [[ "$ARCH" == "aarch64" ]]; then
 fi
 
 echo "🔍 System: $OS_ID $OS_VERSION ($ARCH)$([ "$IS_JETSON" = true ] && echo " - Jetson")"
+
+# ---------------------------------------------------------------------------
+# Conda environment support
+# ---------------------------------------------------------------------------
+# When running inside a conda environment on a desktop (non-Jetson) system,
+# all build tools and C++ libraries are provided by conda.  Skip the system
+# package installation and just verify the environment, set up Git LFS, and
+# print guidance.
+if [ -n "$CONDA_PREFIX" ] && [ "$IS_JETSON" != true ]; then
+    echo ""
+    echo "🐍 Conda environment detected: $(basename "$CONDA_PREFIX")"
+    echo "   System package installation will be skipped."
+    echo "   Dependencies are managed by conda (see environment.yml)."
+    echo ""
+
+    # Quick verification of key packages
+    echo "🔍 Verifying conda environment..."
+    missing=""
+    command -v cmake   &>/dev/null || missing="$missing cmake"
+    command -v just    &>/dev/null || missing="$missing just"
+    command -v git-lfs &>/dev/null || missing="$missing git-lfs"
+
+    # ONNX Runtime headers
+    if [ ! -f "$CONDA_PREFIX/include/onnxruntime_cxx_api.h" ] && \
+       [ ! -d "$CONDA_PREFIX/include/onnxruntime" ]; then
+        missing="$missing libonnxruntime"
+    fi
+
+    # Eigen headers
+    if [ ! -f "$CONDA_PREFIX/include/eigen3/Eigen/Core" ] && \
+       [ ! -f "$CONDA_PREFIX/include/Eigen/Core" ]; then
+        missing="$missing eigen"
+    fi
+
+    # CUDA toolkit (nvcc)
+    command -v nvcc &>/dev/null || missing="$missing cuda-toolkit"
+
+    if [ -n "$missing" ]; then
+        echo "⚠️  Missing conda packages:$missing"
+        echo "   Run: conda env update -f environment.yml"
+        echo ""
+    else
+        echo "✅ Core conda packages verified"
+    fi
+
+    # Git LFS setup (always needed)
+    echo ""
+    echo "📁 Setting up Git LFS..."
+    if git lfs install --force 2>/dev/null; then
+        echo "✅ Git LFS hooks installed successfully"
+    else
+        if git lfs update --force 2>/dev/null; then
+            echo "✅ Git LFS hooks updated successfully"
+        else
+            echo "⚠️  Git LFS hooks may need manual attention"
+        fi
+    fi
+
+    echo ""
+    echo "🎉 Conda environment setup complete!"
+    echo ""
+    echo "📋 Next steps:"
+    echo "   1. Ensure build paths include the conda environment:"
+    echo "      export CMAKE_PREFIX_PATH=\"\$CONDA_PREFIX:\$CMAKE_PREFIX_PATH\""
+    echo "      export onnxruntime_ROOT=\"\$CONDA_PREFIX\""
+    echo "   2. Make sure TensorRT is installed and TensorRT_ROOT is set"
+    echo "      (TensorRT is not available via conda)"
+    echo "   3. Run 'source scripts/setup_env.sh' to configure remaining paths"
+    echo "   4. Run 'just build' to build the project"
+    echo ""
+    echo "💡 Tips:"
+    echo "   - The NVIDIA GPU driver must be installed at the system level"
+    echo "   - CUDA toolkit (nvcc, headers, runtime) is provided by conda"
+    echo "   - Check GPU: nvidia-smi"
+    echo "   - Check CUDA: nvcc --version"
+    exit 0
+fi
 
 # Detect the operating system and package manager
 if command -v apt-get &> /dev/null; then

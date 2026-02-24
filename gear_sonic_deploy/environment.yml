@@ -1,0 +1,53 @@
+# Conda environment for gear_sonic_deploy (desktop x86_64 development)
+#
+# Usage:
+#   conda env create -f environment.yml
+#   conda activate gear-sonic
+#
+# NOTE: The NVIDIA GPU driver must be installed system-wide.
+#       TensorRT is NOT available via conda -- install it separately
+#       and set TensorRT_ROOT to its location.
+
+name: gear-sonic
+channels:
+  - conda-forge
+  - nvidia
+
+dependencies:
+  # Build tools
+  - cmake >=3.18
+  - c-compiler
+  - cxx-compiler
+  - clang
+  - pkg-config
+  - patchelf
+  - cppcheck
+  - just
+  - git-lfs
+
+  # System libraries
+  - zlib
+  - curl
+  - wget
+
+  # C++ libraries
+  - yaml-cpp
+  - eigen
+  - msgpack-cxx
+  - zeromq
+  - cppzmq
+  - nlohmann_json
+  - gtest
+
+  # ONNX Runtime (C++ API)
+  - onnxruntime-cpp >=1.16
+
+  # CUDA toolkit -- provides nvcc, headers, and runtime libraries.
+  # Adjust the version to match your NVIDIA driver compatibility.
+  # The driver itself must still be installed at the system level.
+  - cuda-toolkit =12.4
+
+  # Optional Python tooling
+  - pip
+  - pip:
+    - cmakelang  # provides cmake-format
