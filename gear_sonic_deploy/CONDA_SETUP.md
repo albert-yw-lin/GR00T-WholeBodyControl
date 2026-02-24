@@ -54,7 +54,38 @@ This configures:
 - TensorRT and CUDA library paths (`LD_LIBRARY_PATH`)
 - Git LFS
 
-## Step 4: Build
+## Step 4: Install Python Sim Dependencies (Optional)
+
+If you want to run the MuJoCo simulator (`run_sim_loop.py`), install the Python packages into the conda env:
+
+```bash
+conda activate gear-sonic
+cd ~/GR00T-WholeBodyControl
+pip install -e "gear_sonic[sim]"
+pip install -e external_dependencies/unitree_sdk2_python
+```
+
+This replaces `install_scripts/install_mujoco_sim.sh` — that script creates a separate uv-based venv which is unnecessary when using conda.
+
+## Step 5: Install PICO VR Teleop Dependencies (Optional)
+
+If you want to run PICO VR teleop, install the teleop extra and XRoboToolkit SDK into the conda env:
+
+```bash
+conda activate gear-sonic
+cd ~/GR00T-WholeBodyControl
+
+# Install teleop extra (pyzmq, msgpack, pinocchio, pyvista)
+pip install -e "gear_sonic[teleop]"
+
+# Install XRoboToolkit SDK (CMake/pybind11-based PICO VR bridge)
+pip install pybind11 setuptools
+CMAKE_PREFIX_PATH="$(python -m pybind11 --cmakedir)" pip install --no-build-isolation -e external_dependencies/XRoboToolkit-PC-Service-Pybind_X86_and_ARM64/
+```
+
+This replaces `install_scripts/install_pico.sh` — that script creates a separate uv-based venv (`.venv_teleop`) which is unnecessary when using conda.
+
+## Step 6: Build
 
 ```bash
 just build
@@ -72,6 +103,8 @@ just build
 | TensorRT | Manual install | Set `TensorRT_ROOT` in activation script |
 | ROS2 Humble | System (`/opt/ros/humble`) | `setup_env.sh` sources it |
 | Unitree SDK | Vendored in `thirdparty/` | |
+| Teleop deps (pyzmq, msgpack, pin, pyvista) | `pip install -e "gear_sonic[teleop]"` | Optional, for PICO VR |
+| XRoboToolkit SDK | `pip install` from `external_dependencies/` | Optional, for PICO VR |
 
 ## Troubleshooting
 

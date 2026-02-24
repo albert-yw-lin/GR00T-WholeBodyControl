@@ -48,6 +48,9 @@ dependencies:
   # The driver itself must still be installed at the system level.
   - cuda-toolkit =12.4
 
+  # Python (gear_sonic requires ~=3.10.0)
+  - python =3.10
+
   # Optional Python tooling
   - pip
   - pip:
